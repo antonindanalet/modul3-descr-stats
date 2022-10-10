@@ -1,0 +1,8 @@
+The code generates the following figures here:
+Stated_Ranking_Biking.png
+Stated_Ranking_Car.png
+Stated_Ranking_Environment.png
+Stated_Ranking_General.png
+Stated_Ranking_Innovation.png
+Stated_Ranking_PT.png
+Stated_Ranking_Walking.png

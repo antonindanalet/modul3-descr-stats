@@ -1,16 +1,31 @@
 import pandas as pd
-from pathlib import Path
 import seaborn as sns
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 
-def descr_stats(df_modul3, date_of_delivery):
-    df_count = count_values(df_modul3)
+def descr_stats(df_module_3):
+    df_module_3 = remove_partial_answers(df_module_3)
+    df_module_3 = remove_respondents_without_mobility_data(df_module_3)
+    df_module_3 = remove_respondents_without_weights(df_module_3)
+    df_count = count_values(df_module_3)
     df_percentage = count2percentage(df_count)
-    visualize_percentage(df_percentage, date_of_delivery)
+    visualize_percentage(df_percentage)
 
 
-def visualize_percentage(df_percentage, date_of_delivery):
+def remove_respondents_without_weights(df_module_3):
+    """ These people don't have weights / HHNR and do not exist in the other datafiles from FSO. """
+    df_module_3 = df_module_3[df_module_3['username'] != '70691']
+    df_module_3 = df_module_3[df_module_3['username'] != '78742']
+    return df_module_3
+
+
+def remove_respondents_without_mobility_data(df_modul3):
+    df_modul3 = df_modul3[df_modul3['with_mobility_data'] == True]
+    return df_modul3
+
+
+def visualize_percentage(df_percentage):
     """ This functions generates two types of graphical representations of the ranking questions. """
     ''' Visualize as bar plot '''
     output_folder = Path("../data/output/bar_plot/")
@@ -25,109 +40,120 @@ def visualize_percentage(df_percentage, date_of_delivery):
     output_folder = Path("../data/output/divergent_bar_plot/")
     # General
     title = 'Secteurs dans lesquels des améliorations sont les plus importantes'
-    dict_measures = {101: 'Amélioration des transports publics (train, bus, tram)',
-                     102: 'Amélioration des aménagements cyclables (y compris vélo électrique)',
-                     103: 'Amélioration du trafic routier (voiture, moto)',
-                     104: 'Amélioration des aménagements piétons',
-                     105: 'Réduction de l’impact environnemental du trafic'}
-    output_name = 'Stated_Ranking_General_' + date_of_delivery + '.png'
+    dict_measures = {'SR_Sector_Public_transport': 'Amélioration des transports publics (train, bus, tram)',
+                     'SR_Sector_Bike': 'Amélioration des aménagements cyclables (y compris vélo électrique)',
+                     'SR_Sector_Road': 'Amélioration du trafic routier (voiture, moto)',
+                     'SR_Sector_Walk': 'Amélioration des aménagements piétons',
+                     'SR_Sector_Environment': 'Réduction de l’impact environnemental du trafic'}
+    output_name = 'Stated_Ranking_General.png'
     location_in_df_percentage_beginning = 0
     location_in_df_percentage_end = 5
     visualize_percentage_divergent(df_percentage, output_folder, title, dict_measures, output_name,
                                    location_in_df_percentage_beginning, location_in_df_percentage_end)
     # Car
     title = 'Mesures liées au transport individuel motorisé dans lesquels des améliorations sont les plus importantes'
-    dict_measures = {211: 'Élimination des goulets d’étranglement sur le réseau existant\n'
-                          '(p. ex. construction d’une voie supplémentaire sur une autoroute)',
-                     212: 'Extension du réseau des routes nationales\n'
-                          '(p. ex. construction de nouveaux tronçons autoroutiers)',
-                     213: 'Fluidification du trafic dans les villes et les agglomérations\n'
-                          '(p. ex. construction de nouveaux contournements,\n'
-                          'remplacement des feux par des giratoires)',
-                     214: 'Renforcement de la sécurité routière\n'
-                          '(p. ex. travaux d’aménagement, systèmes d’aide à la conduite)',
-                     215: 'Diffusion d’informations sur l’état du trafic afin d’éviter les '
-                          'embouteillages\n(p. ex. via des applications pour smartphones)'}
-    output_name = 'Stated_Ranking_Car_' + date_of_delivery + '.png'
+    dict_measures = {'SR_Measure_Car_Bottlenecks': 'Élimination des goulets d’étranglement sur le réseau existant\n'
+                                                   '(p. ex. construction d’une voie supplémentaire sur une '
+                                                   'autoroute)',
+                     'SR_Measure_Car_Extension': 'Extension du réseau des routes nationales\n'
+                                                 '(p. ex. construction de nouveaux tronçons autoroutiers)',
+                     'SR_Measure_Car_Cities': 'Fluidification du trafic dans les villes et les agglomérations\n'
+                                              '(p. ex. construction de nouveaux contournements,\n'
+                                              'remplacement des feux par des giratoires)',
+                     'SR_Measure_Car_Safety': 'Renforcement de la sécurité routière\n'
+                                              '(p. ex. travaux d’aménagement, systèmes d’aide à la conduite)',
+                     'SR_Measure_Car_Information': 'Diffusion d’informations sur l’état du trafic afin d’éviter les '
+                                                   'embouteillages\n'
+                                                   '(p. ex. via des applications pour smartphones)'}
+    output_name = 'Stated_Ranking_Car.png'
     location_in_df_percentage_beginning = 5
     location_in_df_percentage_end = 10
     visualize_percentage_divergent(df_percentage, output_folder, title, dict_measures, output_name,
                                    location_in_df_percentage_beginning, location_in_df_percentage_end)
     # Public transport
     title = 'Mesures liées aux transports publics dans lesquels des améliorations sont les plus importantes'
-    dict_measures = {221: 'Amélioration du trafic longues distances (trains) :\n'
-                          'augmentation de la fréquence ou de la vitesse',
-                     222: 'Amélioration du trafic local et régional (RER, tram, bus) :\n'
-                          'augmentation de la fréquence ou de la vitesse',
-                     223: 'Modernisation des trains, des bus et des trams\n'
-                          '(p. ex. nouveaux véhicules, accès Internet)',
-                     224: 'Plus de places sur les lignes existantes',
-                     225: 'Amélioration du confort et de l’efficacité lors des changements\n'
-                          '(p. ex. signalétique, raccourcissement des distances,\n'
-                          'plus de commerces)'}
-    output_name = 'Stated_Ranking_PT_' + date_of_delivery + '.png'
+    dict_measures = {'SR_Measure_Public_transport_Long_distance': 'Amélioration du trafic longues distances '
+                                                                  '(trains) :\n'
+                                                                  'augmentation de la fréquence ou de la vitesse',
+                     'SR_Measure_Public_transport_Local': 'Amélioration du trafic local et régional (RER, tram, '
+                                                          'bus) :\n'
+                                                          'augmentation de la fréquence ou de la vitesse',
+                     'SR_Measure_Public_transport_Vehicles': 'Modernisation des trains, des bus et des trams\n'
+                                                             '(p. ex. nouveaux véhicules, accès Internet)',
+                     'SR_Measure_Public_transport_Seats': 'Plus de places sur les lignes existantes',
+                     'SR_Measure_Public_transport_Comfort': 'Amélioration du confort et de l’efficacité lors des '
+                                                            'changements\n'
+                                                            '(p. ex. signalétique, raccourcissement des distances,\n'
+                                                            'plus de commerces)'}
+    output_name = 'Stated_Ranking_PT.png'
     location_in_df_percentage_beginning = 10
     location_in_df_percentage_end = 15
     visualize_percentage_divergent(df_percentage, output_folder, title, dict_measures, output_name,
                                    location_in_df_percentage_beginning, location_in_df_percentage_end)
     # Biking
     title = 'Mesures liées aux aménagements cyclables dans lesquels des améliorations sont les plus importantes'
-    dict_measures = {231: 'Développement des pistes cyclables',
-                     232: 'Développement des bandes cyclables avec marquage coloré',
-                     233: 'Développement des places de stationnement pour vélos',
-                     234: 'Développement des systèmes de vélos en libre-service',
-                     235: 'Développement des zones limitées à 30 km/h'}
-    output_name = 'Stated_Ranking_Biking_' + date_of_delivery + '.png'
+    dict_measures = {'SR_Measure_Biking_Paths': 'Développement des pistes cyclables',
+                     'SR_Measure_Biking_Lanes': 'Développement des bandes cyclables avec marquage coloré',
+                     'SR_Measure_Biking_Parking': 'Développement des places de stationnement pour vélos',
+                     'SR_Measure_Biking_Sharing': 'Développement des systèmes de vélos en libre-service',
+                     'SR_Measure_Biking_Zone30': 'Développement des zones limitées à 30 km/h'}
+    output_name = 'Stated_Ranking_Biking.png'
     location_in_df_percentage_beginning = 15
     location_in_df_percentage_end = 20
     visualize_percentage_divergent(df_percentage, output_folder, title, dict_measures, output_name,
                                    location_in_df_percentage_beginning, location_in_df_percentage_end)
     # Walking
     title = 'Mesures liées aux aménagements piétons dans lesquels des améliorations sont les plus importantes'
-    dict_measures = {241: 'Développement des zones de rencontre limitées à 20 km/h',
-                     242: 'Renforcement de la sécurité\n'
-                          '(éclairage public, amélioration de la visibilité)',
-                     243: 'Réaménagement de la voirie\n'
-                          '(p. ex. élargissement des trottoirs, zones piétonnes)',
-                     244: 'Renforcement de la convivialité de l’espace public\n'
-                          '(p. ex. plus de bancs, terrasses de cafés, espaces verts)',
-                     245: 'Itinéraires plus directs\n'
-                          '(p. ex. passerelles pour piétons, plus de passages piétons)'}
-    output_name = 'Stated_Ranking_Walking_' + date_of_delivery + '.png'
+    dict_measures = {'SR_Measure_Walking_Zone20': 'Développement des zones de rencontre limitées à 20 km/h',
+                     'SR_Measure_Walking_Safety': 'Renforcement de la sécurité\n'
+                                                  '(éclairage public, amélioration de la visibilité)',
+                     'SR_Measure_Walking_Roadway_design': 'Réaménagement de la voirie\n'
+                                                          '(p. ex. élargissement des trottoirs, zones piétonnes)',
+                     'SR_Measure_Walking_Public_space': 'Renforcement de la convivialité de l’espace public\n'
+                                                        '(p. ex. plus de bancs, terrasses de cafés, espaces verts)',
+                     'SR_Measure_Walking_Routes': 'Itinéraires plus directs\n'
+                                                  '(p. ex. passerelles pour piétons, plus de passages piétons)'}
+    output_name = 'Stated_Ranking_Walking.png'
     location_in_df_percentage_beginning = 20
     location_in_df_percentage_end = 25
     visualize_percentage_divergent(df_percentage, output_folder, title, dict_measures, output_name,
                                    location_in_df_percentage_beginning, location_in_df_percentage_end)
     # Environment
     title = "Mesures liées à l'environnement et l'énergie dans lesquels des améliorations sont les plus importantes"
-    dict_measures = {251: 'Mesures de soutien pour les véhicules électriques\n'
-                          '(p. ex. plus de bornes de recharge, stationnements réservés)',
-                     252: 'Incitations financières à l’achat de nouveaux véhicules\n'
-                          'économes en énergie et à faibles émissions',
-                     253: 'Réduction du bruit du trafic\n'
-                          '(p. ex. revêtements anti-bruit, parois anti-bruit)',
-                     254: 'Interdiction de circuler en ville pour les voitures\n'
-                          'dépassant les valeurs limites d’émissions',
-                     255: 'Prescriptions techniques : limitation de la consommation de carburant'}
-    output_name = 'Stated_Ranking_Environment_' + date_of_delivery + '.png'
+    dict_measures = {'SR_Measure_Environment_Electric_car': 'Mesures de soutien pour les véhicules électriques\n'
+                                                            '(p. ex. plus de bornes de recharge, stationnements réservés)',
+                     'SR_Measure_Environment_New_vehicles': 'Incitations financières à l’achat de nouveaux véhicules\n'
+                                                            'économes en énergie et à faibles émissions',
+                     'SR_Measure_Environment_Noise': 'Réduction du bruit du trafic\n'
+                                                     '(p. ex. revêtements anti-bruit, parois anti-bruit)',
+                     'SR_Measure_Environment_Traffic_ban': 'Interdiction de circuler en ville pour les voitures\n'
+                                                           'dépassant les valeurs limites d’émissions',
+                     'SR_Measure_Environment_Fuel_consumption': 'Prescriptions techniques :'
+                                                                'limitation de la consommation de carburant'}
+    output_name = 'Stated_Ranking_Environment.png'
     location_in_df_percentage_beginning = 25
     location_in_df_percentage_end = 30
     visualize_percentage_divergent(df_percentage, output_folder, title, dict_measures, output_name,
                                    location_in_df_percentage_beginning, location_in_df_percentage_end)
     # Innovation
     title = "Mesures innovantes dans lesquels des améliorations sont les plus importantes"
-    dict_measures = {401: 'Davantage de logements et d’emplois dans les villes et les agglomérations\n'
-                          '(d’où une réduction des distances à parcourir)',
-                     402: 'Hausse générale du coût de la mobilité (voiture et transports publics)',
-                     403: 'Mesures de soutien pour les véhicules autonomes\n'
-                          '(p. ex. modification de lois, expériences pilotes)',
-                     404: 'Mesures de soutien pour la mobilité partagée : autopartage de type\n'
-                          'Mobility, covoiturage, systèmes de prêt de vélos\n'
-                          '(p. ex. modification de lois, expériences pilotes)',
-                     405: 'Soutien aux modèles de travail flexibles, qui permettent de réduire ou\n'
-                          'de décaler les déplacements (p. ex. télétravail depuis chez soi ou\n'
-                          'un autre lieu, libre choix des horaires de travail)'}
-    output_name = 'Stated_Ranking_Innovation_' + date_of_delivery + '.png'
+    dict_measures = {'SR_Measure_Innovation_Housing': 'Davantage de logements et d’emplois dans les villes et les '
+                                                      'agglomérations\n'
+                                                      '(d’où une réduction des distances à parcourir)',
+                     'SR_Measure_Innovation_Mobility_costs': 'Hausse générale du coût de la mobilité '
+                                                             '(voiture et transports publics)',
+                     'SR_Measure_Innovation_Autonomous_vehicles': 'Mesures de soutien pour les véhicules autonomes\n'
+                                                                  '(p. ex. modification de lois, expériences pilotes)',
+                     'SR_Measure_Innovation_Sharing': 'Mesures de soutien pour la mobilité partagée : '
+                                                      'autopartage de type\n'
+                                                      'Mobility, covoiturage, systèmes de prêt de vélos\n'
+                                                      '(p. ex. modification de lois, expériences pilotes)',
+                     'SR_Measure_Innovation_Telecommuting': 'Soutien aux modèles de travail flexibles, qui permettent '
+                                                            'de réduire ou\n'
+                                                            'de décaler les déplacements (p. ex. télétravail depuis '
+                                                            'chez soi ou\n'
+                                                            'un autre lieu, libre choix des horaires de travail)'}
+    output_name = 'Stated_Ranking_Innovation.png'
     location_in_df_percentage_beginning = 30
     location_in_df_percentage_end = 35
     visualize_percentage_divergent(df_percentage, output_folder, title, dict_measures, output_name,
@@ -155,11 +181,11 @@ def visualize_percentage_divergent(df_percentage, output_folder, title, dict_mea
     df_percentage_1.sort_values(by=[''], inplace=True)
     # Rename the columns and index
     df_percentage_1 = df_percentage_1.rename(index=dict_measures,
-                                             columns={1: '1e priorité',
-                                                      2: '2e priorité',
-                                                      3: '3e priorité',
-                                                      4: '4e priorité',
-                                                      5: '5e priorité',
+                                             columns={1: '$\mathregular{1^{re}}$ priorité',
+                                                      2: '$\mathregular{2^e}$ priorité',
+                                                      3: '$\mathregular{3^e}$ priorité',
+                                                      4: '$\mathregular{4^e}$ priorité',
+                                                      5: '$\mathregular{5^e}$ priorité',
                                                       '': ''})
     # Plot the answers
     sns.set_style("whitegrid", {'axes.grid': False})
@@ -168,11 +194,11 @@ def visualize_percentage_divergent(df_percentage, output_folder, title, dict_mea
     # Define the color scheme of the Federal Statistical Office (FSO),
     # with white as the first color, for the invisible column
     FSO_colors = [[1, 1, 1],  # white
-                  [232/255, 89/255, 29/255],  # dark red
-                  [245/255, 164/255, 40/255],  # light red
-                  [207/255, 208/255, 208/255],  # grey
-                  [177/255, 222/255, 241/255],  # light blue
-                  [24/255, 154/255, 196/255]]  # dark blue
+                  [232 / 255, 89 / 255, 29 / 255],  # dark red
+                  [245 / 255, 164 / 255, 40 / 255],  # light red
+                  [207 / 255, 208 / 255, 208 / 255],  # grey
+                  [177 / 255, 222 / 255, 241 / 255],  # light blue
+                  [24 / 255, 154 / 255, 196 / 255]]  # dark blue
     # Plotting the bars with the colors
     ax = df_percentage_1.plot(kind='barh', stacked=True, color=FSO_colors)
     # Make the "invisible column" transparent, so that we see the grid behind
@@ -260,19 +286,23 @@ def visualize_percentage_innovation(df_percentage, output_folder):
     df_count_1.sort_values(by=['sum'], inplace=True)
     df_count_1.drop(columns=['sum'], inplace=True)
     # Rename the columns and index
-    df_count_1 = df_count_1.rename(index={401: 'Davantage de logements et d’emplois dans les villes et les '
-                                               'agglomérations\n'
-                                               '(d’où une réduction des distances à parcourir)',
-                                          402: 'Hausse générale du coût de la mobilité (voiture et transports publics)',
-                                          403: 'Mesures de soutien pour les véhicules autonomes\n'
-                                               '(p. ex. modification de lois, expériences pilotes)',
-                                          404: 'Mesures de soutien pour la mobilité partagée : autopartage de type\n'
-                                               'Mobility, covoiturage, systèmes de prêt de vélos\n'
-                                               '(p. ex. modification de lois, expériences pilotes)',
-                                          405: 'Soutien aux modèles de travail flexibles, '
-                                               'qui permettent de réduire ou\n'
-                                               'de décaler les déplacements (p. ex. télétravail depuis chez soi ou\n'
-                                               'un autre lieu, libre choix des horaires de travail)'},
+    df_count_1 = df_count_1.rename(index={'SR_Measure_Innovation_Housing':
+                                              'Davantage de logements et d’emplois dans les villes et les '
+                                              'agglomérations\n'
+                                              '(d’où une réduction des distances à parcourir)',
+                                          'SR_Measure_Innovation_Mobility_costs':
+                                              'Hausse générale du coût de la mobilité (voiture et transports publics)',
+                                          'SR_Measure_Innovation_Autonomous_vehicles':
+                                              'Mesures de soutien pour les véhicules autonomes\n'
+                                              '(p. ex. modification de lois, expériences pilotes)',
+                                          'SR_Measure_Innovation_Sharing':
+                                              'Mesures de soutien pour la mobilité partagée : autopartage de type\n'
+                                              'Mobility, covoiturage, systèmes de prêt de vélos\n'
+                                              '(p. ex. modification de lois, expériences pilotes)',
+                                          'SR_Measure_Innovation_Telecommuting':
+                                              'Soutien aux modèles de travail flexibles, qui permettent de réduire ou\n'
+                                              'de décaler les déplacements (p. ex. télétravail depuis chez soi ou\n'
+                                              'un autre lieu, libre choix des horaires de travail)'},
                                    columns={1: '1e priorité',
                                             2: '2e priorité',
                                             3: '3e priorité',
@@ -285,11 +315,11 @@ def visualize_percentage_innovation(df_percentage, output_folder):
     sns.set(style="whitegrid")
     # Initialize the matplotlib figure
     f, ax = plt.subplots(figsize=(25, 15))
-    FSO_colors = [[229/255, 244/255, 254/255],
-                  [172/255, 222/255, 242/255],
-                  [0/255, 179/255, 216/255],
-                  [0/255, 153/255, 198/255],
-                  [0/255, 104/255, 134/255]]
+    FSO_colors = [[229 / 255, 244 / 255, 254 / 255],
+                  [172 / 255, 222 / 255, 242 / 255],
+                  [0 / 255, 179 / 255, 216 / 255],
+                  [0 / 255, 153 / 255, 198 / 255],
+                  [0 / 255, 104 / 255, 134 / 255]]
     plot_1 = df_count_1.plot(kind='barh', stacked=True, color=FSO_colors)
     fig = plot_1.get_figure()
     plt.suptitle('Mesures innovantes dans lesquels des améliorations sont les plus importantes',
@@ -329,15 +359,20 @@ def visualize_percentage_environment(df_percentage, output_folder):
     df_count_1.sort_values(by=['sum'], inplace=True)
     df_count_1.drop(columns=['sum'], inplace=True)
     # Rename the columns and index
-    df_count_1 = df_count_1.rename(index={251: 'Mesures de soutien pour les véhicules électriques\n'
-                                               '(p. ex. plus de bornes de recharge, stationnements réservés)',
-                                          252: 'Incitations financières à l’achat de nouveaux véhicules\n'
-                                               'économes en énergie et à faibles émissions',
-                                          253: 'Réduction du bruit du trafic\n'
-                                               '(p. ex. revêtements anti-bruit, parois anti-bruit)',
-                                          254: 'Interdiction de circuler en ville pour les voitures\n'
-                                               'dépassant les valeurs limites d’émissions',
-                                          255: 'Prescriptions techniques : limitation de la consommation de carburant'},
+    df_count_1 = df_count_1.rename(index={'SR_Measure_Environment_Electric_car':
+                                              'Mesures de soutien pour les véhicules électriques\n'
+                                              '(p. ex. plus de bornes de recharge, stationnements réservés)',
+                                          'SR_Measure_Environment_New_vehicles':
+                                              'Incitations financières à l’achat de nouveaux véhicules\n'
+                                              'économes en énergie et à faibles émissions',
+                                          'SR_Measure_Environment_Noise':
+                                              'Réduction du bruit du trafic\n'
+                                              '(p. ex. revêtements anti-bruit, parois anti-bruit)',
+                                          'SR_Measure_Environment_Traffic_ban':
+                                              'Interdiction de circuler en ville pour les voitures\n'
+                                              'dépassant les valeurs limites d’émissions',
+                                          'SR_Measure_Environment_Fuel_consumption':
+                                              'Prescriptions techniques : limitation de la consommation de carburant'},
                                    columns={1: '1e priorité',
                                             2: '2e priorité',
                                             3: '3e priorité',
@@ -350,11 +385,11 @@ def visualize_percentage_environment(df_percentage, output_folder):
     sns.set(style="whitegrid")
     # Initialize the matplotlib figure
     f, ax = plt.subplots(figsize=(25, 15))
-    FSO_colors = [[229/255, 244/255, 254/255],
-                  [172/255, 222/255, 242/255],
-                  [0/255, 179/255, 216/255],
-                  [0/255, 153/255, 198/255],
-                  [0/255, 104/255, 134/255]]
+    FSO_colors = [[229 / 255, 244 / 255, 254 / 255],
+                  [172 / 255, 222 / 255, 242 / 255],
+                  [0 / 255, 179 / 255, 216 / 255],
+                  [0 / 255, 153 / 255, 198 / 255],
+                  [0 / 255, 104 / 255, 134 / 255]]
     plot_1 = df_count_1.plot(kind='barh', stacked=True, color=FSO_colors)
     fig = plot_1.get_figure()
     plt.suptitle("Mesures liées à l'environnement et l'énergie dans lesquels des améliorations sont les plus "
@@ -394,15 +429,20 @@ def visualize_percentage_walking(df_percentage, output_folder):
     df_count_1.sort_values(by=['sum'], inplace=True)
     df_count_1.drop(columns=['sum'], inplace=True)
     # Rename the columns and index
-    df_count_1 = df_count_1.rename(index={241: 'Développement des zones de rencontre limitées à 20 km/h',
-                                          242: 'Renforcement de la sécurité\n'
-                                               '(éclairage public, amélioration de la visibilité)',
-                                          243: 'Réaménagement de la voirie\n'
-                                               '(p. ex. élargissement des trottoirs, zones piétonnes)',
-                                          244: 'Renforcement de la convivialité de l’espace public\n'
-                                               '(p. ex. plus de bancs, terrasses de cafés, espaces verts)',
-                                          245: 'Itinéraires plus directs\n'
-                                               '(p. ex. passerelles pour piétons, plus de passages piétons)'},
+    df_count_1 = df_count_1.rename(index={'SR_Measure_Walking_Zone20':
+                                              'Développement des zones de rencontre limitées à 20 km/h',
+                                          'SR_Measure_Walking_Safety':
+                                              'Renforcement de la sécurité\n'
+                                              '(éclairage public, amélioration de la visibilité)',
+                                          'SR_Measure_Walking_Roadway_design':
+                                              'Réaménagement de la voirie\n'
+                                              '(p. ex. élargissement des trottoirs, zones piétonnes)',
+                                          'SR_Measure_Walking_Public_space':
+                                              'Renforcement de la convivialité de l’espace public\n'
+                                              '(p. ex. plus de bancs, terrasses de cafés, espaces verts)',
+                                          'SR_Measure_Walking_Routes':
+                                              'Itinéraires plus directs\n'
+                                              '(p. ex. passerelles pour piétons, plus de passages piétons)'},
                                    columns={1: '1e priorité',
                                             2: '2e priorité',
                                             3: '3e priorité',
@@ -415,11 +455,11 @@ def visualize_percentage_walking(df_percentage, output_folder):
     sns.set(style="whitegrid")
     # Initialize the matplotlib figure
     f, ax = plt.subplots(figsize=(25, 15))
-    FSO_colors = [[229/255, 244/255, 254/255],
-                  [172/255, 222/255, 242/255],
-                  [0/255, 179/255, 216/255],
-                  [0/255, 153/255, 198/255],
-                  [0/255, 104/255, 134/255]]
+    FSO_colors = [[229 / 255, 244 / 255, 254 / 255],
+                  [172 / 255, 222 / 255, 242 / 255],
+                  [0 / 255, 179 / 255, 216 / 255],
+                  [0 / 255, 153 / 255, 198 / 255],
+                  [0 / 255, 104 / 255, 134 / 255]]
     plot_1 = df_count_1.plot(kind='barh', stacked=True, color=FSO_colors)
     fig = plot_1.get_figure()
     plt.suptitle('Mesures liées aux aménagements piétons dans lesquels des améliorations sont les plus '
@@ -451,7 +491,7 @@ def visualize_percentage_walking(df_percentage, output_folder):
 
 
 def visualize_percentage_biking(df_percentage, output_folder):
-    """ Visualize the "car" ranking questions """
+    ''' Visualize the "car" ranking questions '''
     # Filter the count results of the first question
     df_count_1 = df_percentage.iloc[15:20].copy()
     # Change the order of the rankings, based on the sum of prio 1 and 2
@@ -459,11 +499,14 @@ def visualize_percentage_biking(df_percentage, output_folder):
     df_count_1.sort_values(by=['sum'], inplace=True)
     df_count_1.drop(columns=['sum'], inplace=True)
     # Rename the columns and index
-    df_count_1 = df_count_1.rename(index={231: 'Développement des pistes cyclables',
-                                          232: 'Développement des bandes cyclables avec marquage coloré',
-                                          233: 'Développement des places de stationnement pour vélos',
-                                          234: 'Développement des systèmes de vélos en libre-service',
-                                          235: 'Développement des zones limitées à 30 km/h'},
+    df_count_1 = df_count_1.rename(index={'SR_Measure_Biking_Paths': 'Développement des pistes cyclables',
+                                          'SR_Measure_Biking_Lanes':
+                                              'Développement des bandes cyclables avec marquage coloré',
+                                          'SR_Measure_Biking_Parking':
+                                              'Développement des places de stationnement pour vélos',
+                                          'SR_Measure_Biking_Sharing':
+                                              'Développement des systèmes de vélos en libre-service',
+                                          'SR_Measure_Biking_Zone30': 'Développement des zones limitées à 30 km/h'},
                                    columns={1: '1e priorité',
                                             2: '2e priorité',
                                             3: '3e priorité',
@@ -476,11 +519,11 @@ def visualize_percentage_biking(df_percentage, output_folder):
     sns.set(style="whitegrid")
     # Initialize the matplotlib figure
     f, ax = plt.subplots(figsize=(25, 15))
-    FSO_colors = [[229/255, 244/255, 254/255],
-                  [172/255, 222/255, 242/255],
-                  [0/255, 179/255, 216/255],
-                  [0/255, 153/255, 198/255],
-                  [0/255, 104/255, 134/255]]
+    FSO_colors = [[229 / 255, 244 / 255, 254 / 255],
+                  [172 / 255, 222 / 255, 242 / 255],
+                  [0 / 255, 179 / 255, 216 / 255],
+                  [0 / 255, 153 / 255, 198 / 255],
+                  [0 / 255, 104 / 255, 134 / 255]]
     plot_1 = df_count_1.plot(kind='barh', stacked=True, color=FSO_colors)
     fig = plot_1.get_figure()
     plt.suptitle('Mesures liées aux aménagements cyclables dans lesquels des améliorations sont les plus '
@@ -512,7 +555,7 @@ def visualize_percentage_biking(df_percentage, output_folder):
 
 
 def visualize_percentage_public_transport(df_percentage, output_folder):
-    """ Visualize the "car" ranking questions """
+    ''' Visualize the "car" ranking questions '''
     # Filter the count results of the first question
     df_count_1 = df_percentage.iloc[10:15].copy()
     # Change the order of the rankings, based on the sum of prio 1 and 2
@@ -520,16 +563,21 @@ def visualize_percentage_public_transport(df_percentage, output_folder):
     df_count_1.sort_values(by=['sum'], inplace=True)
     df_count_1.drop(columns=['sum'], inplace=True)
     # Rename the columns and index
-    df_count_1 = df_count_1.rename(index={221: 'Amélioration du trafic longues distances (trains) :\n'
-                                               'augmentation de la fréquence ou de la vitesse',
-                                          222: 'Amélioration du trafic local et régional (RER, tram, bus) :\n'
-                                               'augmentation de la fréquence ou de la vitesse',
-                                          223: 'Modernisation des trains, des bus et des trams\n'
-                                               '(p. ex. nouveaux véhicules, accès Internet)',
-                                          224: 'Plus de places sur les lignes existantes',
-                                          225: 'Amélioration du confort et de l’efficacité lors des changements\n'
-                                               '(p. ex. signalétique, raccourcissement des distances,\n'
-                                               'plus de commerces)'},
+    df_count_1 = df_count_1.rename(index={'SR_Measure_Public_transport_Long_distance':
+                                              'Amélioration du trafic longues distances (trains) :\n'
+                                              'augmentation de la fréquence ou de la vitesse',
+                                          'SR_Measure_Public_transport_Local':
+                                              'Amélioration du trafic local et régional (RER, tram, bus) :\n'
+                                              'augmentation de la fréquence ou de la vitesse',
+                                          'SR_Measure_Public_transport_Vehicles':
+                                              'Modernisation des trains, des bus et des trams\n'
+                                              '(p. ex. nouveaux véhicules, accès Internet)',
+                                          'SR_Measure_Public_transport_Seats':
+                                              'Plus de places sur les lignes existantes',
+                                          'SR_Measure_Public_transport_Comfort':
+                                              'Amélioration du confort et de l’efficacité lors des changements\n'
+                                              '(p. ex. signalétique, raccourcissement des distances,\n'
+                                              'plus de commerces)'},
                                    columns={1: '1e priorité',
                                             2: '2e priorité',
                                             3: '3e priorité',
@@ -542,11 +590,11 @@ def visualize_percentage_public_transport(df_percentage, output_folder):
     sns.set(style="whitegrid")
     # Initialize the matplotlib figure
     f, ax = plt.subplots(figsize=(25, 15))
-    FSO_colors = [[229/255, 244/255, 254/255],
-                  [172/255, 222/255, 242/255],
-                  [0/255, 179/255, 216/255],
-                  [0/255, 153/255, 198/255],
-                  [0/255, 104/255, 134/255]]
+    FSO_colors = [[229 / 255, 244 / 255, 254 / 255],
+                  [172 / 255, 222 / 255, 242 / 255],
+                  [0 / 255, 179 / 255, 216 / 255],
+                  [0 / 255, 153 / 255, 198 / 255],
+                  [0 / 255, 104 / 255, 134 / 255]]
     plot_1 = df_count_1.plot(kind='barh', stacked=True, color=FSO_colors)
     fig = plot_1.get_figure()
     plt.suptitle('Mesures liées aux transports publics dans lesquels des améliorations sont les plus '
@@ -578,7 +626,7 @@ def visualize_percentage_public_transport(df_percentage, output_folder):
 
 
 def visualize_percentage_car(df_percentage, output_folder):
-    """ Visualize the "car" ranking questions """
+    ''' Visualize the "car" ranking questions '''
     # Filter the count results of the first question
     df_count_1 = df_percentage.iloc[5:10].copy()
     # Change the order of the rankings, based on the sum of prio 1 and 2
@@ -586,17 +634,22 @@ def visualize_percentage_car(df_percentage, output_folder):
     df_count_1.sort_values(by=['sum'], inplace=True)
     df_count_1.drop(columns=['sum'], inplace=True)
     # Rename the columns and index
-    df_count_1 = df_count_1.rename(index={211: 'Élimination des goulets d’étranglement sur le réseau existant\n'
-                                               '(p. ex. construction d’une voie supplémentaire sur une autoroute)',
-                                          212: 'Extension du réseau des routes nationales\n'
-                                               '(p. ex. construction de nouveaux tronçons autoroutiers)',
-                                          213: 'Fluidification du trafic dans les villes et les agglomérations\n'
-                                               '(p. ex. construction de nouveaux contournements,\n'
-                                               'remplacement des feux par des giratoires)',
-                                          214: 'Renforcement de la sécurité routière\n'
-                                               '(p. ex. travaux d’aménagement, systèmes d’aide à la conduite)',
-                                          215: 'Diffusion d’informations sur l’état du trafic afin d’éviter les '
-                                               'embouteillages\n(p. ex. via des applications pour smartphones)'},
+    df_count_1 = df_count_1.rename(index={'SR_Measure_Car_Bottlenecks':
+                                              'Élimination des goulets d’étranglement sur le réseau existant\n'
+                                              '(p. ex. construction d’une voie supplémentaire sur une autoroute)',
+                                          'SR_Measure_Car_Extension': 'Extension du réseau des routes nationales\n'
+                                                                      '(p. ex. construction de nouveaux tronçons '
+                                                                      'autoroutiers)',
+                                          'SR_Measure_Car_Cities':
+                                              'Fluidification du trafic dans les villes et les agglomérations\n'
+                                              '(p. ex. construction de nouveaux contournements,\n'
+                                              'remplacement des feux par des giratoires)',
+                                          'SR_Measure_Car_Safety':
+                                              'Renforcement de la sécurité routière\n'
+                                              '(p. ex. travaux d’aménagement, systèmes d’aide à la conduite)',
+                                          'SR_Measure_Car_Information':
+                                              'Diffusion d’informations sur l’état du trafic afin d’éviter les '
+                                              'embouteillages\n(p. ex. via des applications pour smartphones)'},
                                    columns={1: '1e priorité',
                                             2: '2e priorité',
                                             3: '3e priorité',
@@ -609,11 +662,11 @@ def visualize_percentage_car(df_percentage, output_folder):
     sns.set(style="whitegrid")
     # Initialize the matplotlib figure
     f, ax = plt.subplots(figsize=(25, 15))
-    FSO_colors = [[229/255, 244/255, 254/255],
-                  [172/255, 222/255, 242/255],
-                  [0/255, 179/255, 216/255],
-                  [0/255, 153/255, 198/255],
-                  [0/255, 104/255, 134/255]]
+    FSO_colors = [[229 / 255, 244 / 255, 254 / 255],
+                  [172 / 255, 222 / 255, 242 / 255],
+                  [0 / 255, 179 / 255, 216 / 255],
+                  [0 / 255, 153 / 255, 198 / 255],
+                  [0 / 255, 104 / 255, 134 / 255]]
     plot_1 = df_count_1.plot(kind='barh', stacked=True, color=FSO_colors)
     fig = plot_1.get_figure()
     plt.suptitle('Mesures liées au transport individuel motorisé dans lesquels des améliorations sont les plus '
@@ -653,12 +706,16 @@ def visualize_percentage_general(df_percentage, output_folder):
     df_percentage_1.sort_values(by=['sum'], inplace=True)
     df_percentage_1.drop(columns=['sum'], inplace=True)
     # Rename the columns and index
-    df_percentage_1 = df_percentage_1.rename(index={101: 'Amélioration des transports publics (train, bus, tram)',
-                                                    102: 'Amélioration des aménagements cyclables (y compris vélo '
-                                                         'électrique)',
-                                                    103: 'Amélioration du trafic routier (voiture, moto)',
-                                                    104: 'Amélioration des aménagements piétons',
-                                                    105: 'Réduction de l’impact environnemental du trafic'},
+    df_percentage_1 = df_percentage_1.rename(index={'SR_Sector_Public_transport':
+                                                        'Amélioration des transports publics (train, bus, tram)',
+                                                    'SR_Sector_Bike':
+                                                        'Amélioration des aménagements cyclables '
+                                                        '(y compris vélo électrique)',
+                                                    'SR_Sector_Road':
+                                                        'Amélioration du trafic routier (voiture, moto)',
+                                                    'SR_Sector_Walk': 'Amélioration des aménagements piétons',
+                                                    'SR_Sector_Environment':
+                                                        'Réduction de l’impact environnemental du trafic'},
                                              columns={1: '1e priorité',
                                                       2: '2e priorité',
                                                       3: '3e priorité',
@@ -671,11 +728,11 @@ def visualize_percentage_general(df_percentage, output_folder):
     sns.set(style="whitegrid")
     # Initialize the matplotlib figure
     f, ax = plt.subplots(figsize=(25, 15))
-    FSO_colors = [[229/255, 244/255, 254/255],
-                  [172/255, 222/255, 242/255],
-                  [0/255, 179/255, 216/255],
-                  [0/255, 153/255, 198/255],
-                  [0/255, 104/255, 134/255]]
+    FSO_colors = [[229 / 255, 244 / 255, 254 / 255],
+                  [172 / 255, 222 / 255, 242 / 255],
+                  [0 / 255, 179 / 255, 216 / 255],
+                  [0 / 255, 153 / 255, 198 / 255],
+                  [0 / 255, 104 / 255, 134 / 255]]
     plot_1 = df_percentage_1.plot(kind='barh', stacked=True, color=FSO_colors)
     fig = plot_1.get_figure()
     plt.suptitle('Secteurs dans lesquels des améliorations sont les plus importantes')
@@ -713,19 +770,124 @@ def count2percentage(df_modul3):
     return df_modul3
 
 
+def remove_partial_answers(df_modul3):
+    # Remove answers with -99 somewhere in the 5 answers
+    list_of_questions_sector = ['SR_Sector_Public_transport',
+                                'SR_Sector_Bike',
+                                'SR_Sector_Road',
+                                'SR_Sector_Walk',
+                                'SR_Sector_Environment']
+    df_modul3 = remove_partial_answers_for_list(df_modul3, list_of_questions_sector)
+    list_of_questions_measure_car = ['SR_Measure_Car_Bottlenecks',
+                                     'SR_Measure_Car_Extension',
+                                     'SR_Measure_Car_Cities',
+                                     'SR_Measure_Car_Safety',
+                                     'SR_Measure_Car_Information']
+    df_modul3 = remove_partial_answers_for_list(df_modul3, list_of_questions_measure_car)
+    list_of_questions_measure_public_transport = ['SR_Measure_Public_transport_Long_distance',
+                                                  'SR_Measure_Public_transport_Local',
+                                                  'SR_Measure_Public_transport_Vehicles',
+                                                  'SR_Measure_Public_transport_Seats',
+                                                  'SR_Measure_Public_transport_Comfort']
+    df_modul3 = remove_partial_answers_for_list(df_modul3, list_of_questions_measure_public_transport)
+    list_of_questions_measure_biking = ['SR_Measure_Biking_Paths',
+                                        'SR_Measure_Biking_Lanes',
+                                        'SR_Measure_Biking_Parking',
+                                        'SR_Measure_Biking_Sharing',
+                                        'SR_Measure_Biking_Zone30']
+    df_modul3 = remove_partial_answers_for_list(df_modul3, list_of_questions_measure_biking)
+    list_of_questions_measure_walking = ['SR_Measure_Walking_Zone20',
+                                         'SR_Measure_Walking_Safety',
+                                         'SR_Measure_Walking_Roadway_design',
+                                         'SR_Measure_Walking_Public_space',
+                                         'SR_Measure_Walking_Routes']
+    df_modul3 = remove_partial_answers_for_list(df_modul3, list_of_questions_measure_walking)
+    list_of_questions_measure_environment = ['SR_Measure_Environment_Electric_car',
+                                             'SR_Measure_Environment_New_vehicles',
+                                             'SR_Measure_Environment_Noise',
+                                             'SR_Measure_Environment_Traffic_ban',
+                                             'SR_Measure_Environment_Fuel_consumption']
+    df_modul3 = remove_partial_answers_for_list(df_modul3, list_of_questions_measure_environment)
+    list_of_questions_measure_innovation = ['SR_Measure_Innovation_Housing',
+                                            'SR_Measure_Innovation_Mobility_costs',
+                                            'SR_Measure_Innovation_Autonomous_vehicles',
+                                            'SR_Measure_Innovation_Sharing',
+                                            'SR_Measure_Innovation_Telecommuting']
+    df_modul3 = remove_partial_answers_for_list(df_modul3, list_of_questions_measure_innovation)
+
+    # Remove answers that are not exactly 1, 2, 3, 4, 5 (e.g. 1, 1, 1, 1, 1)
+    df_modul3 = remove_wrong_answers_for_list(df_modul3, list_of_questions_sector)
+    df_modul3 = remove_wrong_answers_for_list(df_modul3, list_of_questions_measure_car)
+    df_modul3 = remove_wrong_answers_for_list(df_modul3, list_of_questions_measure_public_transport)
+    df_modul3 = remove_wrong_answers_for_list(df_modul3, list_of_questions_measure_biking)
+    df_modul3 = remove_wrong_answers_for_list(df_modul3, list_of_questions_measure_walking)
+    df_modul3 = remove_wrong_answers_for_list(df_modul3, list_of_questions_measure_environment)
+    df_modul3 = remove_wrong_answers_for_list(df_modul3, list_of_questions_measure_innovation)
+    return df_modul3
+
+
+def remove_wrong_answers_for_list(df_modul3, list_of_question_numbers):
+    for ranking in [1, 2, 3, 4, 5]:
+        df_modul3['at_least_one'] = False
+        # Check that there is at least one 1 (or 2, or...)
+        for question_number in list_of_question_numbers:
+            df_modul3.loc[df_modul3[str(question_number)] == ranking, 'at_least_one'] = True
+        for question_number in list_of_question_numbers:
+            df_modul3.loc[~df_modul3['at_least_one'], str(question_number)] = -99
+    del df_modul3['at_least_one']
+    return df_modul3
+
+
+def remove_partial_answers_for_list(df_modul3, list_of_question_numbers):
+    for questions1 in list_of_question_numbers:
+        for questions2 in list_of_question_numbers:
+            if questions1 != questions2:
+                df_modul3.loc[df_modul3[questions1] == -99, questions2] = -99
+                df_modul3.loc[df_modul3[questions1] == -99, questions2] = -99
+                df_modul3.loc[df_modul3[questions1] == -99, questions2] = -99
+                df_modul3.loc[df_modul3[questions1] == -99, questions2] = -99
+    return df_modul3
+
+
 def count_values(df_modul3):
-    df_count = pd.DataFrame(0, index=[101, 102, 103, 104, 105,
-                                      211, 212, 213, 214, 215,
-                                      221, 222, 223, 224, 225,
-                                      231, 232, 233, 234, 235,
-                                      241, 242, 243, 244, 245,
-                                      251, 252, 253, 254, 255,
-                                      401, 402, 403, 404, 405], columns=[1, 2, 3, 4, 5])
-    for columns_stated_ranking in df_modul3.columns:
-        if columns_stated_ranking.startswith('lpRang_v'):
-            question_number = int(columns_stated_ranking[-8:-5])
-            counts = df_modul3[columns_stated_ranking].value_counts(sort=False)
-            for value, count in counts.iteritems():
-                if value != -99:
-                    df_count.at[question_number, int(value)] = df_count.at[question_number, int(value)] + count
+    list_of_questions = ['SR_Sector_Public_transport',
+                         'SR_Sector_Bike',
+                         'SR_Sector_Road',
+                         'SR_Sector_Walk',
+                         'SR_Sector_Environment',
+                         'SR_Measure_Car_Bottlenecks',
+                         'SR_Measure_Car_Extension',
+                         'SR_Measure_Car_Cities',
+                         'SR_Measure_Car_Safety',
+                         'SR_Measure_Car_Information',
+                         'SR_Measure_Public_transport_Long_distance',
+                         'SR_Measure_Public_transport_Local',
+                         'SR_Measure_Public_transport_Vehicles',
+                         'SR_Measure_Public_transport_Seats',
+                         'SR_Measure_Public_transport_Comfort',
+                         'SR_Measure_Biking_Paths',
+                         'SR_Measure_Biking_Lanes',
+                         'SR_Measure_Biking_Parking',
+                         'SR_Measure_Biking_Sharing',
+                         'SR_Measure_Biking_Zone30',
+                         'SR_Measure_Walking_Zone20',
+                         'SR_Measure_Walking_Safety',
+                         'SR_Measure_Walking_Roadway_design',
+                         'SR_Measure_Walking_Public_space',
+                         'SR_Measure_Walking_Routes',
+                         'SR_Measure_Environment_Electric_car',
+                         'SR_Measure_Environment_New_vehicles',
+                         'SR_Measure_Environment_Noise',
+                         'SR_Measure_Environment_Traffic_ban',
+                         'SR_Measure_Environment_Fuel_consumption',
+                         'SR_Measure_Innovation_Housing',
+                         'SR_Measure_Innovation_Mobility_costs',
+                         'SR_Measure_Innovation_Autonomous_vehicles',
+                         'SR_Measure_Innovation_Sharing',
+                         'SR_Measure_Innovation_Telecommuting']
+    df_count = pd.DataFrame(0, index=list_of_questions, columns=[1, 2, 3, 4, 5])
+    for columns_stated_ranking in list_of_questions:
+        for ranking in [1, 2, 3, 4, 5]:
+            count = df_modul3.loc[df_modul3[str(columns_stated_ranking)] == ranking, 'WP'].sum()
+            df_count.at[columns_stated_ranking, ranking] = df_count.at[columns_stated_ranking, ranking] + count
     return df_count

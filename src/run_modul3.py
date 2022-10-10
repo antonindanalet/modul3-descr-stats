@@ -3,9 +3,8 @@ from descr_stats.descr_stats import descr_stats
 
 
 def run_modul3():
-    code_of_delivery = '20222329'
-    df_module3 = read_data(code_of_delivery)
-    descr_stats(df_module3, code_of_delivery)
+    df_module_3 = read_data()
+    descr_stats(df_module_3)
 
 
 if __name__ == '__main__':
