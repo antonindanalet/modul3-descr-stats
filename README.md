@@ -4,6 +4,5 @@ Generating (divergent) bar plots using the data on attitudes towards transport p
 The code runs with python 3.9 and needs the following packages:
 - pandas with openpyxl
 - seaborn
-- pyreadstat
 - pathlib
 - matplotlib
