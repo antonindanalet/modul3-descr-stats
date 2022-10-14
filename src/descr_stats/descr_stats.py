@@ -54,6 +54,13 @@ def compute_percentages_and_confidence_intervals(df_module_3):
         new_columns = pd.DataFrame({columns_stated_ranking + f"_{i}": df_module_3[columns_stated_ranking] == i
                                     for i in range(1, 6)})
         df_module_3 = pd.concat([df_module_3, new_columns], axis=1)
+        # Add the variable for the ranking (answered 1, 2 or (half of) 3)
+        name_new_variable_1 = columns_stated_ranking + '_sum_1_2_half_3'
+        name_new_variable_2 = columns_stated_ranking + '_sum_4_5_half_3'
+        df_module_3[name_new_variable_1] = df_module_3.apply(lambda row: define_ranking_1(row, columns_stated_ranking),
+                                                             axis=1)
+        df_module_3[name_new_variable_2] = df_module_3.apply(lambda row: define_ranking_2(row, columns_stated_ranking),
+                                                             axis=1)
 
     # Compute weighted average and confidence interval for each group of questions
     df_for_csv = pd.DataFrame(columns=['Variable',
@@ -62,9 +69,12 @@ def compute_percentages_and_confidence_intervals(df_module_3):
                                        '3', '3 (+/-)',
                                        '4', '4 (+/-)',
                                        '5', '5 (+/-)',
-                                       'Sample'])
+                                       'Sample',
+                                       '1+2+0.5*3', '1+2+0.5*3 (+/-)'])
     for question in list_of_questions:
+        # Create the raw to be added, beginning with the variable's name
         list_of_questions_with_ranking = [question + '_' + str(i) for i in range(1, 6)]
+        # Keep only the people who have answered to theses particular questions
         df_module_3_with_answers = df_module_3[df_module_3[list_of_questions_with_ranking[0][:-2]] != -99]
         percentage_and_sample = get_weighted_avg_and_std(df_module_3_with_answers, weights='WP', percentage=True,
                                                          list_of_columns=list_of_questions_with_ranking)
@@ -74,11 +84,50 @@ def compute_percentages_and_confidence_intervals(df_module_3):
         for i in range(1, 6):
             list_of_values_for_row.append(dict_percentage[question + '_' + str(i)][0])
             list_of_values_for_row.append(dict_percentage[question + '_' + str(i)][1])
+        # Add the sample size to the raw
         list_of_values_for_row.append(sample)
+        # Add the variable used to rank the measures
+        name_ranking_variable_1 = question + '_sum_1_2_half_3'
+        name_ranking_variable_2 = question + '_sum_4_5_half_3'
+        percentage_and_sample_rank = get_weighted_avg_and_std(df_module_3_with_answers, weights='WP', percentage=True,
+                                                              list_of_columns=[name_ranking_variable_1,
+                                                                               name_ranking_variable_2])
+        percentage_rank = percentage_and_sample_rank[0]
+        percentage_rank_sum_1_2_half_3 = percentage_rank[name_ranking_variable_1][0]
+        list_of_values_for_row.append(percentage_rank_sum_1_2_half_3)
+        confidence_interval_rank_sum_1_2_half_3 = percentage_rank[name_ranking_variable_1][1]
+        list_of_values_for_row.append(confidence_interval_rank_sum_1_2_half_3)
+        # Add the raw at the end of the df / csv file
         df_for_csv.loc[len(df_for_csv.index)] = list_of_values_for_row
     output_folder = Path("../data/output/table/")
     df_for_csv.to_csv(output_folder / 'module_3_results.csv', index=False, sep=';')
+    # Remove unnecessary variables for the next steps
+    df_for_csv.drop(columns=['1+2+0.5*3', '1+2+0.5*3 (+/-)',
+                             'Sample',
+                             '1 (+/-)', '2 (+/-)', '3 (+/-)', '4 (+/-)', '5 (+/-)'], inplace=True)
     return df_for_csv
+
+
+def define_ranking_1(row, columns_stated_ranking):
+    if row[columns_stated_ranking] == 1:
+        return 1
+    elif row[columns_stated_ranking] == 2:
+        return 1
+    elif row[columns_stated_ranking] == 3:
+        return 0.5
+    else:
+        return 0
+
+
+def define_ranking_2(row, columns_stated_ranking):
+    if row[columns_stated_ranking] == 4:
+        return 1
+    elif row[columns_stated_ranking] == 5:
+        return 1
+    elif row[columns_stated_ranking] == 3:
+        return 0.5
+    else:
+        return 0
 
 
 def remove_respondents_without_weights(df_module_3):
@@ -99,13 +148,13 @@ def visualize_percentage(df_percentage):
     output_folder = Path("../data/output/bar_plot/")
     # Change the order of the rankings, based on the sum of prio 1 and 2
     df_percentage['sum_1_2'] = df_percentage['1'] + df_percentage['2']
-    # visualize_percentage_general(df_percentage, output_folder)
-    # visualize_percentage_car(df_percentage, output_folder)
-    # visualize_percentage_public_transport(df_percentage, output_folder)
-    # visualize_percentage_biking(df_percentage, output_folder)
-    # visualize_percentage_walking(df_percentage, output_folder)
-    # visualize_percentage_environment(df_percentage, output_folder)
-    # visualize_percentage_innovation(df_percentage, output_folder)
+    visualize_percentage_general(df_percentage, output_folder)
+    visualize_percentage_car(df_percentage, output_folder)
+    visualize_percentage_public_transport(df_percentage, output_folder)
+    visualize_percentage_biking(df_percentage, output_folder)
+    visualize_percentage_walking(df_percentage, output_folder)
+    visualize_percentage_environment(df_percentage, output_folder)
+    visualize_percentage_innovation(df_percentage, output_folder)
     ''' Visualize as divergent bar plot '''
     output_folder = Path("../data/output/divergent_bar_plot/")
     # General
@@ -217,8 +266,7 @@ def visualize_percentage_divergent(df_percentage, output_folder, title, dict_mea
         list_of_variable_names_of_measures.append(key)
     df_percentage_1 = df_percentage.loc[df_percentage['Variable'].isin(list_of_variable_names_of_measures)].copy()
     # Change the order of the columns to have priority 1 on the right
-    df_percentage_1.drop(columns=['sum_1_2', 'Sample', '1 (+/-)', '2 (+/-)', '3 (+/-)', '4 (+/-)', '5 (+/-)'],
-                         inplace=True)
+    df_percentage_1.drop(columns=['sum_1_2'], inplace=True)
     df_percentage_1.set_index('Variable', inplace=True)
     df_percentage_1 = df_percentage_1.sort_index(axis=1, ascending=False)
     print(df_percentage_1)
@@ -341,8 +389,7 @@ def visualize_percentage_innovation(df_percentage, output_folder):
                                         (df_percentage['Variable'] == 'SR_Measure_Innovation_Sharing') |
                                         (df_percentage['Variable'] == 'SR_Measure_Innovation_Telecommuting')].copy()
     df_percentage_1.sort_values(by=['sum_1_2'], inplace=True)
-    df_percentage_1.drop(columns=['sum_1_2', 'Sample', '1 (+/-)', '2 (+/-)', '3 (+/-)', '4 (+/-)', '5 (+/-)'],
-                         inplace=True)
+    df_percentage_1.drop(columns=['sum_1_2'], inplace=True)
     df_percentage_1.set_index('Variable', inplace=True)
     # Rename the columns and index
     df_percentage_1 = df_percentage_1.rename(index={'SR_Measure_Innovation_Housing':
@@ -421,8 +468,7 @@ def visualize_percentage_environment(df_percentage, output_folder):
                                         (df_percentage['Variable'] == 'SR_Measure_Environment_Traffic_ban') |
                                         (df_percentage['Variable'] == 'SR_Measure_Environment_Fuel_consumption')].copy()
     df_percentage_1.sort_values(by=['sum_1_2'], inplace=True)
-    df_percentage_1.drop(columns=['sum_1_2', 'Sample', '1 (+/-)', '2 (+/-)', '3 (+/-)', '4 (+/-)', '5 (+/-)'],
-                         inplace=True)
+    df_percentage_1.drop(columns=['sum_1_2'], inplace=True)
     df_percentage_1.set_index('Variable', inplace=True)
     # Rename the columns and index
     df_percentage_1 = df_percentage_1.rename(index={'SR_Measure_Environment_Electric_car':
@@ -496,8 +542,7 @@ def visualize_percentage_walking(df_percentage, output_folder):
                                         (df_percentage['Variable'] == 'SR_Measure_Walking_Public_space') |
                                         (df_percentage['Variable'] == 'SR_Measure_Walking_Routes')].copy()
     df_percentage_1.sort_values(by=['sum_1_2'], inplace=True)
-    df_percentage_1.drop(columns=['sum_1_2', 'Sample', '1 (+/-)', '2 (+/-)', '3 (+/-)', '4 (+/-)', '5 (+/-)'],
-                         inplace=True)
+    df_percentage_1.drop(columns=['sum_1_2'], inplace=True)
     df_percentage_1.set_index('Variable', inplace=True)
     # Rename the columns and index
     df_percentage_1 = df_percentage_1.rename(index={'SR_Measure_Walking_Zone20':
@@ -570,8 +615,7 @@ def visualize_percentage_biking(df_percentage, output_folder):
                                         (df_percentage['Variable'] == 'SR_Measure_Biking_Sharing') |
                                         (df_percentage['Variable'] == 'SR_Measure_Biking_Zone30')].copy()
     df_percentage_1.sort_values(by=['sum_1_2'], inplace=True)
-    df_percentage_1.drop(columns=['sum_1_2', 'Sample', '1 (+/-)', '2 (+/-)', '3 (+/-)', '4 (+/-)', '5 (+/-)'],
-                         inplace=True)
+    df_percentage_1.drop(columns=['sum_1_2'], inplace=True)
     df_percentage_1.set_index('Variable', inplace=True)
     # Rename the columns and index
     df_percentage_1 = df_percentage_1.rename(index={'SR_Measure_Biking_Paths': 'Développement des pistes cyclables',
@@ -639,8 +683,7 @@ def visualize_percentage_public_transport(df_percentage, output_folder):
                                         (df_percentage['Variable'] == 'SR_Measure_Public_transport_Seats') |
                                         (df_percentage['Variable'] == 'SR_Measure_Public_transport_Comfort')].copy()
     df_percentage_1.sort_values(by=['sum_1_2'], inplace=True)
-    df_percentage_1.drop(columns=['sum_1_2', 'Sample', '1 (+/-)', '2 (+/-)', '3 (+/-)', '4 (+/-)', '5 (+/-)'],
-                         inplace=True)
+    df_percentage_1.drop(columns=['sum_1_2'], inplace=True)
     df_percentage_1.set_index('Variable', inplace=True)
     # Rename the columns and index
     df_percentage_1 = df_percentage_1.rename(index={'SR_Measure_Public_transport_Long_distance':
@@ -714,8 +757,7 @@ def visualize_percentage_car(df_percentage, output_folder):
                                         (df_percentage['Variable'] == 'SR_Measure_Car_Safety') |
                                         (df_percentage['Variable'] == 'SR_Measure_Car_Information')].copy()
     df_percentage_1.sort_values(by=['sum_1_2'], inplace=True)
-    df_percentage_1.drop(columns=['sum_1_2', 'Sample', '1 (+/-)', '2 (+/-)', '3 (+/-)', '4 (+/-)', '5 (+/-)'],
-                         inplace=True)
+    df_percentage_1.drop(columns=['sum_1_2'], inplace=True)
     df_percentage_1.set_index('Variable', inplace=True)
     # Rename the columns and index
     df_percentage_1 = df_percentage_1.rename(index={'SR_Measure_Car_Bottlenecks':
@@ -792,8 +834,7 @@ def visualize_percentage_general(df_percentage, output_folder):
                                         (df_percentage['Variable'] == 'SR_Sector_Walk') |
                                         (df_percentage['Variable'] == 'SR_Sector_Environment')].copy()
     df_percentage_1.sort_values(by=['sum_1_2'], inplace=True)
-    df_percentage_1.drop(columns=['sum_1_2', 'Sample', '1 (+/-)', '2 (+/-)', '3 (+/-)', '4 (+/-)', '5 (+/-)'],
-                         inplace=True)
+    df_percentage_1.drop(columns=['sum_1_2'], inplace=True)
     df_percentage_1.set_index('Variable', inplace=True)
     # Rename the columns and index
     df_percentage_1 = df_percentage_1.rename(index={'SR_Sector_Public_transport':
