@@ -8,7 +8,6 @@ from mtmc2015.utils2015.compute_confidence_interval import get_weighted_avg_and_
 def descr_stats(df_module_3):
     df_module_3 = remove_partial_answers(df_module_3)
     df_module_3 = remove_respondents_without_mobility_data(df_module_3)
-    df_module_3 = remove_respondents_without_weights(df_module_3)
     df_percentage = compute_percentages_and_confidence_intervals(df_module_3)
     visualize_percentage(df_percentage)
 
@@ -130,16 +129,9 @@ def define_ranking_2(row, columns_stated_ranking):
         return 0
 
 
-def remove_respondents_without_weights(df_module_3):
-    """ These people don't have weights / HHNR and do not exist in the other datafiles from FSO. """
-    df_module_3 = df_module_3[df_module_3['username'] != '70691']
-    df_module_3 = df_module_3[df_module_3['username'] != '78742']
+def remove_respondents_without_mobility_data(df_module_3):
+    df_module_3 = df_module_3[df_module_3['with_mobility_data'] == True]
     return df_module_3
-
-
-def remove_respondents_without_mobility_data(df_modul3):
-    df_modul3 = df_modul3[df_modul3['with_mobility_data'] == True]
-    return df_modul3
 
 
 def visualize_percentage(df_percentage):
